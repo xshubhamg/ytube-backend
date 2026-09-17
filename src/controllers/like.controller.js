@@ -27,7 +27,11 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { isLiked: false }, "Video unliked"));
   }
 
-  await Like.create({ video: videoId, likedBy: req.user?._id });
+  await Like.create({ video: videoId, likedBy: req.user?._id }).catch(
+    (err) => {
+      if (err?.code !== 11000) throw err;
+    }
+  );
 
   return res
     .status(200)
@@ -55,7 +59,11 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { isLiked: false }, "Comment unliked"));
   }
 
-  await Like.create({ comment: commentId, likedBy: req.user?._id });
+  await Like.create({ comment: commentId, likedBy: req.user?._id }).catch(
+    (err) => {
+      if (err?.code !== 11000) throw err;
+    }
+  );
 
   return res
     .status(200)
@@ -82,7 +90,11 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { isLiked: false }, "Tweet unliked"));
   }
 
-  await Like.create({ tweet: tweetId, likedBy: req.user?._id });
+  await Like.create({ tweet: tweetId, likedBy: req.user?._id }).catch(
+    (err) => {
+      if (err?.code !== 11000) throw err;
+    }
+  );
 
   return res
     .status(200)

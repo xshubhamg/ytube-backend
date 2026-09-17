@@ -11,6 +11,12 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
   if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid videoId");
 
+  const video = await Video.findById(videoId);
+  if (!video) throw new ApiError(404, "Video not found");
+
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+
   const aggregate = Comment.aggregate([
     {
       $match: {
@@ -33,8 +39,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
   ]);
 
   const comments = await Comment.aggregatePaginate(aggregate, {
-    page: parseInt(page, 10),
-    limit: parseInt(limit, 10),
+    page: pageNum,
+    limit: limitNum,
   });
 
   return res

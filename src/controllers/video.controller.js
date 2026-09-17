@@ -18,6 +18,12 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   const matchStage = { isPublished: true };
 
+  const allowedSortFields = ["createdAt", "views", "duration", "title"];
+  const sortField = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
+
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+
   if (query?.trim()) {
     matchStage.$or = [
       { title: { $regex: query.trim(), $options: "i" } },
@@ -45,12 +51,12 @@ const getAllVideos = asyncHandler(async (req, res) => {
       },
     },
     { $addFields: { owner: { $first: "$owner" } } },
-    { $sort: { [sortBy]: sortType === "asc" ? 1 : -1 } },
+    { $sort: { [sortField]: sortType === "asc" ? 1 : -1 } },
   ]);
 
   const videos = await Video.aggregatePaginate(aggregate, {
-    page: parseInt(page, 10),
-    limit: parseInt(limit, 10),
+    page: pageNum,
+    limit: limitNum,
   });
 
   return res
@@ -96,13 +102,24 @@ const getVideoById = asyncHandler(async (req, res) => {
 
   if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid videoId");
 
+  const existingVideo = await Video.findById(videoId).populate(
+    "owner",
+    "fullname username avatar"
+  );
+
+  if (!existingVideo) throw new ApiError(404, "Video not found");
+
+  const isOwner =
+    existingVideo.owner?._id?.toString() === req.user?._id?.toString();
+  if (!existingVideo.isPublished && !isOwner) {
+    throw new ApiError(404, "Video not found");
+  }
+
   const video = await Video.findByIdAndUpdate(
     videoId,
     { $inc: { views: 1 } },
     { new: true }
   ).populate("owner", "fullname username avatar");
-
-  if (!video) throw new ApiError(404, "Video not found");
 
   if (req.user?._id) {
     await User.findByIdAndUpdate(req.user._id, {

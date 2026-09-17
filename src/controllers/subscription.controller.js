@@ -33,6 +33,8 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   await Subscription.create({
     subscriber: req.user?._id,
     channel: channelId,
+  }).catch((err) => {
+    if (err?.code !== 11000) throw err;
   });
 
   return res
